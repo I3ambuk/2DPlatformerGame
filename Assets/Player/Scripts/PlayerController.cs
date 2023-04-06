@@ -12,8 +12,9 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    PlayerMovement playerMovement;
-    //Player CeilingTest
+    [SerializeField] PlayerMovement playerMovement;
+    [SerializeField] Transform ceilingCheck;
+    [SerializeField] Transform groundCheck;
     //Player GroundTest
     float horizontalInput;
     float verticalInput;
@@ -25,11 +26,11 @@ public class PlayerController : MonoBehaviour
     void Update()
     {
         //TODO: Change All Variables depending on Inputs
-        horizontalInput = Input.GetButtonRaw("Horizontal");
-        verticalInput = Input.GetButtonRaw("Vertical");
+        horizontalInput = Input.GetAxisRaw("Horizontal");
+        verticalInput = Input.GetAxisRaw("Vertical");
         
         tryToJump = Input.GetButtonDown("Jump");
-        tryToDash = Input.GetButtonDown("");
+        //tryToDash = Input.GetButtonDown("");
         if (tryToDash)
         {
             //TODO: Get dashDirection from Input
@@ -39,7 +40,8 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
-        dir = Vector2.normalize(new Vector2(horizontalInput, verticalInput));
+        dir = new Vector2(horizontalInput, verticalInput).normalized;
+        
         if (CanMove())
         {
             playerMovement.Move(dir);
