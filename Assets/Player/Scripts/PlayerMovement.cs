@@ -16,6 +16,7 @@ public class PlayerMovement : MonoBehaviour
 
 
 	private Rigidbody2D rb;
+	private Transform playerTransform;
 
 	private Vector2 up;
 	private Vector2 left;
@@ -31,8 +32,9 @@ public class PlayerMovement : MonoBehaviour
 	void Awake()
     {
 		rb = GetComponent<Rigidbody2D>();
-		up = new Vector2(0, 1);
-		left = new Vector2(-1, 0);
+		playerTransform = GetComponent<Transform>();
+		up = playerTransform.up;
+		left = new Vector2(up.y, -up.x);
 		defaultGravityScale = 9.81f;
 
 		jumpVelocityScale = Mathf.Sqrt(2 * jumpheight * defaultGravityScale);
@@ -53,7 +55,6 @@ public class PlayerMovement : MonoBehaviour
             }
 		} else
         {
-			//Gravity when falling: TODO: Gravity does not working
 			fallVelocity -= defaultGravityScale * 3 * Time.deltaTime * this.up;
 		}
 		rb.velocity = fallVelocity + moveVelocity;
@@ -66,6 +67,9 @@ public class PlayerMovement : MonoBehaviour
 	public void Rotate(Vector2 newUpvector)
 	{
 		//TODO: Implement Rotation Behavior of the Player
+		playerTransform.rotation = Quaternion.FromToRotation(this.up, newUpvector);
+		this.up = playerTransform.up;
+		this.left = new Vector2(this.up.y, -this.up.x);
 	}
 
 	public void Move(Vector2 dir) //--> Changes Player Velocity
