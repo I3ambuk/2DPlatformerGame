@@ -15,10 +15,13 @@ public class PlayerMovement : MonoBehaviour
 	[SerializeField] private float jumpheight;
 
 
-	private Rigidbody2D rigidbody;
+	private Rigidbody2D rb;
 
 	private Vector2 up;
 	private Vector2 left;
+	private Vector2 moveVelocity = Vector2.zero;
+	private Vector2 fallVelocity = Vector2.zero;
+	private float jumpVelocityScale;
 	private float defaultGravityScale;
 	private bool isJumping;
 	private Vector2 maxHeightPoint;
@@ -27,10 +30,12 @@ public class PlayerMovement : MonoBehaviour
 	//Initialize Variabless
 	void Awake()
     {
-		rigidbody = GetComponent<Rigidbody2D>();
+		rb = GetComponent<Rigidbody2D>();
 		up = new Vector2(0, 1);
 		left = new Vector2(-1, 0);
 		defaultGravityScale = 9.81f;
+
+		jumpVelocityScale = Mathf.Sqrt(2 * jumpheight * defaultGravityScale);
 	}
 
 	void FixedUpdate()
@@ -38,10 +43,10 @@ public class PlayerMovement : MonoBehaviour
 		//Jump Logic
 		if (isJumping)
         {
-			if (rigidbody.velocity.sqrMagnitude != 0 && Vector2.Angle(rigidbody.velocity, this.up) > 90)
+			if (rb.velocity.sqrMagnitude != 0 && Vector2.Angle(rb.velocity, this.up) > 90)
             {
 				//Player is moving up, lower Gravity 
-				rigidbody.velocity -= defaultGravityScale * Time.deltaTime * this.up;
+				fallVelocity -= defaultGravityScale * Time.deltaTime * this.up;
 			} else
             {
 				isJumping = false;
@@ -49,9 +54,9 @@ public class PlayerMovement : MonoBehaviour
 		} else
         {
 			//Gravity when falling: TODO: Gravity does not working
-			Debug.Log(rigidbody.velocity);
-			rigidbody.velocity -= defaultGravityScale * 3 * Time.deltaTime * this.up;
+			fallVelocity -= defaultGravityScale * 3 * Time.deltaTime * this.up;
 		}
+		rb.velocity = fallVelocity + moveVelocity;
 		//Dash Logic
 	}
 
@@ -69,7 +74,8 @@ public class PlayerMovement : MonoBehaviour
 		//For Example: The Direction is Up in World View, but the player runs on left Wall, so the here the player should run left from players view.
 		if (dir.sqrMagnitude == 0)
         {
-			rigidbody.velocity = Vector2.zero;
+			//BUG: Setzen auf 0 verhindert fallen.:(
+			moveVelocity = Vector2.zero;
 			return;
         }
 
@@ -78,14 +84,14 @@ public class PlayerMovement : MonoBehaviour
         {
 			case float n when (n >= 45 && n < 135):
 				//MoveRight
-				rigidbody.velocity = -this.left * this.speed;
+				moveVelocity = -this.left * this.speed;
 				break;
 			case float n when (n >= 135 && n < -135):
 				//MoveDown
 				break;
 			case float n when (n >= -135 && n < -45):
 				//MoveLeft
-				rigidbody.velocity = this.left * this.speed;
+				moveVelocity = this.left * this.speed;
 				break;
 			default:
 				//MoveUp
@@ -96,8 +102,7 @@ public class PlayerMovement : MonoBehaviour
 	{
 		//Implement Jump Event
 		isJumping = true;
-		float jumpVelocityScale = Mathf.Sqrt(2 * jumpheight * defaultGravityScale);
-		rigidbody.velocity += this.up * jumpVelocityScale;
+		fallVelocity = this.up * jumpVelocityScale;
 	}
 	public void GravityDash(Vector2 dashDir)
     {

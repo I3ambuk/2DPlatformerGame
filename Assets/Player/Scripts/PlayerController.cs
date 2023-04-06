@@ -61,8 +61,9 @@ public class PlayerController : MonoBehaviour
         }
         if (tryToDash && CanDash())
         {
-            playerMovement.GravityDash(dashDir) ;
+            playerMovement.GravityDash(dashDir);
         }
+
     }
 
     private bool CanMove()

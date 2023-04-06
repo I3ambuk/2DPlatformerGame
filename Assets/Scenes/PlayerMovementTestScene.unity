@@ -211,7 +211,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   speed: 10
-  jumpheight: 100
+  jumpheight: 4
 --- !u!114 &331188392
 MonoBehaviour:
   m_ObjectHideFlags: 0
