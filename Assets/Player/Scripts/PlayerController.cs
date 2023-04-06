@@ -12,9 +12,10 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    [SerializeField] PlayerMovement playerMovement;
-    [SerializeField] Transform ceilingCheck;
-    [SerializeField] Transform groundCheck;
+    [SerializeField] private PlayerMovement playerMovement;
+    [SerializeField] private Transform ceilingCheck;
+    [SerializeField] private Transform groundCheck;
+    [SerializeField] private float groundCheckRadius = 0.02f;
     //Player GroundTest
     float horizontalInput;
     float verticalInput;
@@ -28,8 +29,11 @@ public class PlayerController : MonoBehaviour
         //TODO: Change All Variables depending on Inputs
         horizontalInput = Input.GetAxisRaw("Horizontal");
         verticalInput = Input.GetAxisRaw("Vertical");
+        if (Input.GetButton("Jump"))
+        {
+            tryToJump = true;
+        }
         
-        tryToJump = Input.GetButtonDown("Jump");
         //tryToDash = Input.GetButtonDown("");
         if (tryToDash)
         {
@@ -46,9 +50,14 @@ public class PlayerController : MonoBehaviour
         {
             playerMovement.Move(dir);
         }
-        if (tryToJump && CanJump())
+        if (tryToJump)
         {
-            playerMovement.Jump();
+            if (CanJump())
+            {
+                Debug.Log("Jump");
+                playerMovement.Jump();
+            }
+            tryToJump = false;
         }
         if (tryToDash && CanDash())
         {
@@ -63,7 +72,8 @@ public class PlayerController : MonoBehaviour
 
     private bool CanJump()
     {
-        return playerMovement.CanJump(); //&& ...
+        bool isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, LayerMask.GetMask("Ground"));
+        return playerMovement.CanJump() && isGrounded; //&& ...
     }
     private bool CanDash()
     {

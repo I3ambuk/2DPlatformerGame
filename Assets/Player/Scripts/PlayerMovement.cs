@@ -12,12 +12,17 @@ public class PlayerMovement : MonoBehaviour
 {
 
 	[SerializeField] private float speed;
+	[SerializeField] private float jumpheight;
+
 
 	private Rigidbody2D rigidbody;
 
 	private Vector2 up;
 	private Vector2 left;
-	private float gravityScale;
+	private float defaultGravityScale;
+	private bool isJumping;
+	private Vector2 maxHeightPoint;
+	private Vector2 groundLevelPoint;
 
 	//Initialize Variabless
 	void Awake()
@@ -25,16 +30,30 @@ public class PlayerMovement : MonoBehaviour
 		rigidbody = GetComponent<Rigidbody2D>();
 		up = new Vector2(0, 1);
 		left = new Vector2(-1, 0);
-		gravityScale = 9.81f;
+		defaultGravityScale = 9.81f;
 	}
 
 	void FixedUpdate()
     {
-		//Change Player position in the world, depending on players velocity
-		
 		//Jump Logic
+		if (isJumping)
+        {
+			if (rigidbody.velocity.sqrMagnitude != 0 && Vector2.Angle(rigidbody.velocity, this.up) > 90)
+            {
+				//Player is moving up, lower Gravity 
+				rigidbody.velocity -= defaultGravityScale * Time.deltaTime * this.up;
+			} else
+            {
+				isJumping = false;
+            }
+		} else
+        {
+			//Gravity when falling: TODO: Gravity does not working
+			Debug.Log(rigidbody.velocity);
+			rigidbody.velocity -= defaultGravityScale * 3 * Time.deltaTime * this.up;
+		}
 		//Dash Logic
-    }
+	}
 
 	/**
 	 * public Movement Methods, Called from Player Controller, activates Movement in FixedUpdate()
@@ -48,7 +67,7 @@ public class PlayerMovement : MonoBehaviour
 	{
 		//TODO: Move Left/Right(from Player view) depending what is closest to the given direction
 		//For Example: The Direction is Up in World View, but the player runs on left Wall, so the here the player should run left from players view.
-		if (dir.magnitude == 0)
+		if (dir.sqrMagnitude == 0)
         {
 			rigidbody.velocity = Vector2.zero;
 			return;
@@ -76,6 +95,9 @@ public class PlayerMovement : MonoBehaviour
 	public void Jump()
 	{
 		//Implement Jump Event
+		isJumping = true;
+		float jumpVelocityScale = Mathf.Sqrt(2 * jumpheight * defaultGravityScale);
+		rigidbody.velocity += this.up * jumpVelocityScale;
 	}
 	public void GravityDash(Vector2 dashDir)
     {
