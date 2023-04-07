@@ -25,6 +25,7 @@ public class PlayerMovement : MonoBehaviour
 	private float jumpVelocityScale;
 	private float defaultGravityScale;
 	private bool isJumping;
+	private bool isDashing;
 	private Vector2 maxHeightPoint;
 	private Vector2 groundLevelPoint;
 
@@ -32,9 +33,9 @@ public class PlayerMovement : MonoBehaviour
 	void Awake()
     {
 		rb = GetComponent<Rigidbody2D>();
-		playerTransform = GetComponent<Transform>();
+		playerTransform = this.transform;
 		up = playerTransform.up;
-		left = new Vector2(up.y, -up.x);
+		left = new Vector2(-up.y, up.x);
 		defaultGravityScale = 9.81f;
 
 		jumpVelocityScale = Mathf.Sqrt(2 * jumpheight * defaultGravityScale);
@@ -57,21 +58,21 @@ public class PlayerMovement : MonoBehaviour
         {
 			fallVelocity -= defaultGravityScale * 3 * Time.deltaTime * this.up;
 		}
-		rb.velocity = fallVelocity + moveVelocity;
+		
 		//Dash Logic
+		if (isDashing)
+		{
+			//fallVelocity -= defaultGravityScale * 5 * Time.deltaTime * this.up;
+		}
+
+
+		rb.velocity = fallVelocity + moveVelocity;
 	}
 
 	/**
 	 * public Movement Methods, Called from Player Controller, activates Movement in FixedUpdate()
 	*/
-	public void Rotate(Vector2 newUpvector)
-	{
-		//TODO: Implement Rotation Behavior of the Player
-		playerTransform.rotation = Quaternion.FromToRotation(this.up, newUpvector);
-		this.up = playerTransform.up;
-		this.left = new Vector2(this.up.y, -this.up.x);
-	}
-
+	
 	public void Move(Vector2 dir) //--> Changes Player Velocity
 	{
 		//TODO: Move Left/Right(from Player view) depending what is closest to the given direction
@@ -110,11 +111,16 @@ public class PlayerMovement : MonoBehaviour
 	}
 	public void GravityDash(Vector2 dashDir)
     {
-		//TODO: Implement GravitDash Event
+		//TODO: Implement GravityDash Event
+		//isDashing = true;
 		//Change Rotation
+		RotateToUp(-dashDir);
 		//Change Player Velocity
+		fallVelocity = Vector2.zero;
+		Debug.Log("Up: "+this.up);
+		Debug.Log("Left: " + this.left);
 		//Change Player Gravity Scale
-    }
+	}
 
 
 	public bool CanMove()
@@ -129,5 +135,13 @@ public class PlayerMovement : MonoBehaviour
     {
 		return true;
     }
+
+	public void RotateToUpVector(Vector2 newUpvector)
+	{
+		//TODO: Implement Rotation Behavior of the Player
+		playerTransform.rotation = Quaternion.LookRotation(playerTransform.forward, newUpvector);
+		this.up = playerTransform.up;
+		this.left = -playerTransform.right;
+	}
 
 }

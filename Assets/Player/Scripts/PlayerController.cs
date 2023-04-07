@@ -16,6 +16,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private Transform ceilingCheck;
     [SerializeField] private Transform groundCheck;
     [SerializeField] private float groundCheckRadius = 0.02f;
+    private Transform playerTransform;
     //Player GroundTest
     float horizontalInput;
     float verticalInput;
@@ -23,6 +24,10 @@ public class PlayerController : MonoBehaviour
     Vector2 dashDir;
     bool tryToDash;
     bool tryToJump;
+    private void Awake()
+    {
+        playerTransform = this.transform;
+    }
 
     void Update()
     {
@@ -34,11 +39,16 @@ public class PlayerController : MonoBehaviour
             tryToJump = true;
         }
         
-        //tryToDash = Input.GetButtonDown("");
-        if (tryToDash)
+        if (Input.GetButtonDown("Fire1"))
         {
+            tryToDash = true;
             //TODO: Get dashDirection from Input
-            //dashdir = ...
+            Vector3 mousePosRaw = Input.mousePosition;
+            Vector2 mousePos = Camera.main.ScreenToWorldPoint(mousePosRaw);
+            Vector2 playerpos = playerTransform.position;
+            dashDir = (mousePos - playerpos);
+            dashDir.Normalize();
+            Debug.Log("dir: " + dashDir);
         }
     }
 
@@ -59,11 +69,15 @@ public class PlayerController : MonoBehaviour
             }
             tryToJump = false;
         }
-        if (tryToDash && CanDash())
-        {
-            playerMovement.GravityDash(dashDir);
+        if (tryToDash)
+        { 
+            if (CanDash())
+            {
+                playerMovement.GravityDash(dashDir);
+            }
+            tryToDash = false;
         }
-
+        SnapToGround();
     }
 
     private bool CanMove()
@@ -79,5 +93,13 @@ public class PlayerController : MonoBehaviour
     private bool CanDash()
     {
         return playerMovement.CanDash();//&& ...
+    }
+    private void SnapToGround()
+    {
+        Collider2D groundCollider = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, LayerMask.GetMask("Ground"));
+        if (groundCollider != null)
+        {
+            groundCollider.
+        }
     }
 }
