@@ -230,7 +230,6 @@ GameObject:
   - component: {fileID: 331188390}
   - component: {fileID: 331188389}
   - component: {fileID: 331188392}
-  - component: {fileID: 331188391}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -293,20 +292,6 @@ Rigidbody2D:
   m_SleepingMode: 0
   m_CollisionDetection: 1
   m_Constraints: 4
---- !u!114 &331188391
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 331188386}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c259a3918d6566044b72f426252cc27b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  speed: 10
-  jumpheight: 4
 --- !u!114 &331188392
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -319,10 +304,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d4d568ad781e4004081371993ace2a27, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerMovement: {fileID: 331188391}
   ceilingCheck: {fileID: 1885215433}
   groundCheck: {fileID: 992392207}
   groundCheckRadius: 0.02
+  jumpheight: 3
+  gravityFallFactor: 3
+  dashSpeed: 20
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
