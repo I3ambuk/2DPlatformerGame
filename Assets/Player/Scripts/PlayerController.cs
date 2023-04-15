@@ -50,7 +50,6 @@ public class PlayerController : MonoBehaviour
         playerTransform = this.transform;
         up = playerTransform.up;
         jumpVelocityScale = Mathf.Sqrt(2 * jumpheight * defaultGravityScale);
-        isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, LayerMask.GetMask("Ground"));
         isFalling = !isGrounded && !isRising;
     }
 
@@ -81,7 +80,6 @@ public class PlayerController : MonoBehaviour
     void FixedUpdate()
     {
         up = transform.up;
-        isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, LayerMask.GetMask("Ground"));
         //No isFalling = !isGrounded && !isRising, so that onLandEvent is possible after hitting Ground again
         if (!isGrounded && !isRising)
         {
@@ -153,6 +151,15 @@ public class PlayerController : MonoBehaviour
         fallVelocity += gravityVector * Time.deltaTime;
         rb.velocity = moveVelocity + fallVelocity + dashVelocity;
     }
+    public void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.gameObject.layer == LayerMask.NameToLayer("Ground"))
+        {
+            isGrounded = true;
+            //BUG: passiert natürlich auch bei collision mit wänden , nur collsion mit füßen...
+            playerTransform.rotation = Quaternion.LookRotation(playerTransform.forward, collision.GetContact(0).normal);
+        }
+    }
     //Movement Events
     public void Move(Vector2 dir)
     {
@@ -198,6 +205,10 @@ public class PlayerController : MonoBehaviour
     private void OnLandEvent()
     {
         Debug.Log("LAND!!");
+        //TODO: Snap to Grounded Surface when landing, so that controlling the player is possible again
+        Collider2D ground = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, LayerMask.GetMask("Ground"));
+        // Allgemeiner, da Object evtl von mehreren Seiten begehbar, Oder Leveldesign sehr aufwendig da manuell
+       // playerTransform.rotation = Quaternion.LookRotation(playerTransform.forward, groundNormal);
     }
     //Check Movement
     private bool CanMove()
