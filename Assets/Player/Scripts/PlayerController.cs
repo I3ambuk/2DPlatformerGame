@@ -148,15 +148,15 @@ public class PlayerController : MonoBehaviour
         }
 
         //Set player Velocity
-        fallVelocity += gravityVector * Time.deltaTime;
+        fallVelocity = isGrounded? Vector2.zero : fallVelocity + gravityVector * Time.deltaTime;
         rb.velocity = moveVelocity + fallVelocity + dashVelocity;
     }
     public void OnCollisionEnter2D(Collision2D collision)
     {
-        if (collision.gameObject.layer == LayerMask.NameToLayer("Ground"))
+        //Checks if the feet hits the ground, if so snap player to the ground.
+        if (collision.otherCollider.gameObject.name == groundCheck.name && collision.gameObject.layer == LayerMask.NameToLayer("Ground"))
         {
             isGrounded = true;
-            //BUG: passiert natürlich auch bei collision mit wänden , nur collsion mit füßen...
             playerTransform.rotation = Quaternion.LookRotation(playerTransform.forward, collision.GetContact(0).normal);
         }
     }
@@ -192,12 +192,14 @@ public class PlayerController : MonoBehaviour
     {
         //Implement Jump Event
         isRising = true;
+        isGrounded = false;
         fallVelocity = up * jumpVelocityScale;
     }
     private void GravityDash(Vector2 dashDir)
     {
         //TODO: Implement GravityDash Event
         isDashing = true;
+        isGrounded = false;
         playerTransform.rotation = Quaternion.LookRotation(playerTransform.forward, -dashDir);
         fallVelocity = Vector2.zero;
         dashTimer = dashDuration;
