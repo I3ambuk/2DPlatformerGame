@@ -9,6 +9,12 @@ using UnityEngine;
  * 
  * Diese Klasse kennt sowohl die Komponenten des Spielers, als auch die Objekte mit denen der Spieler interagiert/kollidiert
  */
+/*
+ * TODO: Steuerung des Dashes anpassen, dass sowohl für controller als auch tastatur angenehm ist !! wahrscheinlich Refactoring notwendig um die Tastenbelegung austauschbar zu machen
+ * TODO: Ausdauer Mechanik hinzufügen, sodass Spieler bei verbrauchter Ausdauer zu Boden fällt.
+ * TODO: Refaktorisieren wo es machbar ist. Was sollte nach Außen sichtbar sein? Was muss in der UI geändert werden? Wie wird UI benachrichtigt
+ * ?
+ */
 
 public class PlayerController : MonoBehaviour
 {
@@ -16,6 +22,8 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private Transform ceilingCheck;
     [SerializeField] private Transform groundCheck;
     [SerializeField] private float groundCheckRadius = 0.02f;
+    [SerializeField] private Animator animator;
+
     private Rigidbody2D rb;
     private Transform playerTransform;
     private Vector2 up;
@@ -74,6 +82,22 @@ public class PlayerController : MonoBehaviour
             dashDir = (mousePos - playerpos);
             dashDir.Normalize();
             Debug.Log("dir: " + dashDir);
+        }
+
+        //Animation
+        animator.SetBool("isRising", isRising);
+        animator.SetBool("isFalling", isFalling);
+        animator.SetBool("isDashing", isDashing);
+        animator.SetBool("isGrounded", isGrounded);
+        Vector2 right = playerTransform.right;
+        float floatDir = moveVelocity == Vector2.zero ? 0f : (right - moveVelocity.normalized == Vector2.zero) ? 1f : -1f;
+        animator.SetFloat("direction", floatDir);
+        //FlipAnimation
+        if (floatDir != 0)
+        {
+            Vector3 newScale = animator.transform.localScale;
+            newScale.x = floatDir * Mathf.Abs(newScale.x);
+            animator.transform.localScale = newScale;
         }
     }
 
@@ -226,5 +250,10 @@ public class PlayerController : MonoBehaviour
     {
         Debug.Log(isFalling);
         return isGrounded || isRising || isFalling;
+    }
+
+    public string getDirection()
+    {
+        return up.ToString();
     }
 }
