@@ -416,6 +416,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1462841728}
   - component: {fileID: 1462841727}
+  - component: {fileID: 1462841729}
   m_Layer: 0
   m_Name: LevelGeneration
   m_TagString: Untagged
@@ -430,7 +431,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1462841726}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ef0c0c8f575be30458a79a67f722eddb, type: 3}
   m_Name: 
@@ -439,6 +440,11 @@ MonoBehaviour:
   RoomLRB: {fileID: 8793794884150870546, guid: 4124eec4cfd4367479e253a87acab804, type: 3}
   RoomLRT: {fileID: 2423759566404140134, guid: 9ac37e667f0174c4f93d3e13ab848f40, type: 3}
   RoomLRBT: {fileID: 3194988885406762606, guid: c312051c04e807f47bc8afbd90c64459, type: 3}
+  startingPositions:
+  - {x: 0, y: 0}
+  - {x: 1, y: 0}
+  - {x: 2, y: 0}
+  - {x: 3, y: 0}
   step: 10
   upperLeftCorner: {fileID: 1055904536}
 --- !u!4 &1462841728
@@ -456,6 +462,38 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 6
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1462841729
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1462841726}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c7eca76a8ce9ccd46a5e9ad534ecf532, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  TestMain: {fileID: 2301125582190423714, guid: 52eb6a4cd6ee93443a7a7f4aa04834fe, type: 3}
+  TestSide: {fileID: 2301125582190423714, guid: 54cb19e04b78ae543b06c8ab1844a55e, type: 3}
+  distance: 10
+  upperLeftCorner: {fileID: 1055904536}
+  Empty: {fileID: 7942846899407906789, guid: 8edaa7c22aa854d498f78129913681df, type: 3}
+  RoomL: {fileID: 5838979803563552470, guid: 071583d8e5dc797418d53eda2afb1966, type: 3}
+  RoomR: {fileID: 5838979803563552470, guid: 9f80b86125a4f054ba3c77dd7bba437a, type: 3}
+  RoomT: {fileID: 5838979803563552470, guid: 7adc2210e814a3b43a08afb34c01591f, type: 3}
+  RoomB: {fileID: 5838979803563552470, guid: 59ea0c3ddd446c346a62f865b76c0c5d, type: 3}
+  RoomLR: {fileID: 5838979803563552470, guid: 4a520f0b80bd5904198f3b7bd6875816, type: 3}
+  RoomLT: {fileID: 5838979803563552470, guid: 54af03953a753b94dbb7f08dc7a2d198, type: 3}
+  RoomLB: {fileID: 5838979803563552470, guid: 97518598f3ac8bc4daa2f1744e3f70b0, type: 3}
+  RoomRT: {fileID: 5838979803563552470, guid: b8e5fc6d3e2e2e24c815ba15a7970222, type: 3}
+  RoomRB: {fileID: 5838979803563552470, guid: 5e4c218d3e28d794bb03f81ce4d60dec, type: 3}
+  RoomTB: {fileID: 5838979803563552470, guid: bdf9db991067cfb49ba8fd81c426f55a, type: 3}
+  RoomLRB: {fileID: 8793794884150870546, guid: 4124eec4cfd4367479e253a87acab804, type: 3}
+  RoomLRT: {fileID: 2423759566404140134, guid: 9ac37e667f0174c4f93d3e13ab848f40, type: 3}
+  RoomLTB: {fileID: 8793794884150870546, guid: 74f312b297144d44ba12df42e8c6442f, type: 3}
+  RoomRTB: {fileID: 8793794884150870546, guid: 12698c429033c264eaf8d6d5dfb06164, type: 3}
+  RoomLRBT: {fileID: 3194988885406762606, guid: c312051c04e807f47bc8afbd90c64459, type: 3}
 --- !u!1 &1652763292
 GameObject:
   m_ObjectHideFlags: 0
