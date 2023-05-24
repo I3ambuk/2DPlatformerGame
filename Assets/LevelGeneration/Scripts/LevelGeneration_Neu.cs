@@ -10,6 +10,9 @@ public class LevelGeneration_Neu : MonoBehaviour
     //TEST
     public GameObject TestMain;
     public GameObject TestSide;
+    public GameObject TestStart;
+    public GameObject TestEnd;
+    public GameObject Player;
     //
     public float distance = 10;
     public Transform upperLeftCorner;
@@ -36,6 +39,9 @@ public class LevelGeneration_Neu : MonoBehaviour
     private Dictionary<(bool l, bool r, bool t, bool b), GameObject> roomMap;
     void Start()
     {
+        Transform ROOMS = this.transform.Find("Rooms").transform;
+        Transform RoomTypeTags = this.transform.Find("RoomTypeTags");
+        //Setze welcher Eingänge die jeweiligen Räume haben
         roomMap = new Dictionary<(bool l, bool r, bool t, bool b), GameObject>()
         {
             { (false, false, false, false), Empty},
@@ -56,7 +62,7 @@ public class LevelGeneration_Neu : MonoBehaviour
             { (true, true, true, true), RoomLRBT},
 
         };
-
+        //Generiere den Grid für die Räume und instanziiere passende Prefabs
         grid = Generator.Generate();
         for (int y = 0; y < grid.GetLength(1); y++)
         {
@@ -64,14 +70,23 @@ public class LevelGeneration_Neu : MonoBehaviour
             {
                 GameObject room = PickRoom(grid[x, y]);
                 Vector2 pos = (Vector2) upperLeftCorner.position + distance * new Vector2(x,-y);
-                Instantiate(room, pos, Quaternion.identity);
-                //TEST
+                Instantiate(room, pos, Quaternion.identity).transform.parent = ROOMS;
+                
+                //Instanziiere den Player Spawn im Start Raum und für Testzwecke die die Test Objekte
                 if (grid[x,y].type == GenerateGrid.CellType.Main)
                 {
-                    Instantiate(TestMain, pos, Quaternion.identity);
+                    Instantiate(TestMain, pos, Quaternion.identity).transform.parent = RoomTypeTags; ;
                 } else if(grid[x, y].type == GenerateGrid.CellType.Side)
                 {
-                    Instantiate(TestSide, pos, Quaternion.identity);
+                    Instantiate(TestSide, pos, Quaternion.identity).transform.parent = RoomTypeTags;
+                }
+                else if (grid[x, y].type == GenerateGrid.CellType.Start)
+                {
+                    Instantiate(Player, pos, Quaternion.identity).transform.parent = RoomTypeTags;
+                }
+                else if (grid[x, y].type == GenerateGrid.CellType.End)
+                {
+                    Instantiate(TestEnd, pos, Quaternion.identity).transform.parent = RoomTypeTags;
                 }
             }
         }

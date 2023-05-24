@@ -4,11 +4,12 @@ using UnityEngine;
 
 public class GenerateGrid
 {
+    //Setzt die maximale Pfadlänge für den Hauptpfad
     public int lengthOfMain = 10;
     private int counter;
     private Cell[,] grid = new Cell[4, 4];
 
-    public enum CellType { Main, Side, EMPTY }
+    public enum CellType { Main, Side, EMPTY, Start, End}
     public struct Cell
     {
         public CellType type;
@@ -34,52 +35,119 @@ public class GenerateGrid
                 //Add Left free Edge
                 if (x > 0)
                 {
-                    cell.freeEdges.Add(new Vector2Int(-1, 0));
+                    cell.freeEdges.Add(Vector2Int.left);
                 }
                 //Add Right free Edge
                 if (x < grid.GetLength(0) - 1)
                 {
-                    cell.freeEdges.Add(new Vector2Int(1, 0));
+                    cell.freeEdges.Add(Vector2Int.right);
                 }
-                //Add Top free Edge
+                //Add Top free Edge (Im Grid ist Top und Down im Vergelich zu Vector2Int verstauscht, da Origin in linken oberen Ecke)
                 if (y > 0)
                 {
-                    cell.freeEdges.Add(new Vector2Int(0, -1));
+                    cell.freeEdges.Add(Vector2Int.down);
                 }
                 //Add Bottom free Edge
                 if (y < grid.GetLength(1) - 1)
                 {
-                    cell.freeEdges.Add(new Vector2Int(0, 1));
+                    cell.freeEdges.Add(Vector2Int.up);
                 }
                 grid[x, y] = cell;
             }
         }
 
         //Inititalisiere Start
-        //Random Startpunkt TODO Extra Funktion
+        //Wählt zufälligen Start (nicht am Rand), wählt einen zufälligen Weg, entfernt alle anderen Kanten
         Vector2Int randomStart = new Vector2Int(Random.Range(1,grid.GetLength(0)-1), Random.Range(1,grid.GetLength(1)-1));
-        Debug.Log(randomStart.ToString());
-        Cell startCell = grid[randomStart.x, randomStart.y];
-        startCell.type = CellType.Main;
-        //Pick random free Edge
-        int randIndex = Random.Range(0, startCell.freeEdges.Count);
-        Vector2Int pickedEdge = startCell.freeEdges[randIndex];
-        //Update edges in StartCell (set marked and remove all other)
-        startCell.markedEdges.Add(pickedEdge);
-        startCell.freeEdges.Remove(pickedEdge); //ACHTUNG BEI NEUER FUNKTION!!
-        grid[randomStart.x, randomStart.y] = startCell;
-        //Update edges in NeighbourCell
-        Vector2Int neighbourIndex = randomStart + pickedEdge;
-        Cell neighbourCell = grid[neighbourIndex.x, neighbourIndex.y];
-        neighbourCell.markedEdges.Add(-pickedEdge);
-        neighbourCell.freeEdges.Remove(-pickedEdge);
-        grid[neighbourIndex.x, neighbourIndex.y] = neighbourCell;
+        setType(randomStart, CellType.Start);
+        int randIndex = Random.Range(0, grid[randomStart.x, randomStart.y].freeEdges.Count);
+        Vector2Int pickedEdge = grid[randomStart.x, randomStart.y].freeEdges[randIndex];
+        markEdge(randomStart, pickedEdge);
         RemoveAllEdges(randomStart);
-        //Rekursive Call with Neighbour
-        NextCell(neighbourIndex, CellType.Main);
+
+        //Geht weiter zur nächsten Zelle
+        //Von dort aus wird rekursiv der Hauptweg und alle Nebenwege generiert
+        NextCell(randomStart + pickedEdge, CellType.Main);
 
         DebugPrintGrid();
         return grid;
+    }
+    private void NextCell(Vector2Int pos, CellType type)
+    {
+        if (grid[pos.x, pos.y].type == CellType.EMPTY)
+        {
+            setType(pos, type);
+        }
+        DebugPrintGrid();
+        if (type == CellType.Main)
+        {
+            //Test All neighbours if they are also Main, if so remove the connection to avoid direct shortcuts (shortcuts with sideways still possible)
+            grid[pos.x, pos.y].freeEdges.RemoveAll(edge =>
+            {
+                Cell neighbour = grid[pos.x + edge.x, pos.y + edge.y];
+                if (neighbour.type == CellType.Main)
+                {
+                    neighbour.freeEdges.Remove(-edge);
+                    grid[pos.x + edge.x, pos.y + edge.y] = neighbour;
+                    return true;
+                }
+                return false;
+            });
+
+            while (counter > 0)
+            {
+                counter--;
+                //Erweitere Hauptweg, (in extra Funktion TODO)
+                //Pick random free Edge if available
+                if (grid[pos.x, pos.y].freeEdges.Count > 0)
+                {
+                    int randIndex = Random.Range(0, grid[pos.x, pos.y].freeEdges.Count);
+                    Vector2Int pickedEdge = grid[pos.x, pos.y].freeEdges[randIndex];
+                    markEdge(pos, pickedEdge);
+                    NextCell(pos + pickedEdge, CellType.Main);
+                }
+            }
+            if (counter == 0)
+            {
+                counter--;
+                setType(pos, CellType.End);
+                RemoveAllEdges(pos);
+            }
+        }
+        // Wähle eine zufällige Teilmenge der verbliebenden freien Pfade als Nebenpfade
+        for (int i = 0; i < grid[pos.x, pos.y].freeEdges.Count; i++)
+        {
+            int rand = Random.Range(0, 2);
+            if (rand == 0)
+            {
+                Vector2Int pickedEdge = grid[pos.x, pos.y].freeEdges[i];
+                markEdge(pos, pickedEdge);
+                NextCell(pos + pickedEdge, CellType.Side);
+            }
+        }
+        //Entferne Alle nicht ausgewählten Pfade
+        RemoveAllEdges(pos);
+    }
+
+
+
+    private void setType(Vector2Int idx, CellType type)
+    {
+        grid[idx.x, idx.y].type = type;
+    }
+    private void markEdge(Vector2Int cell_idx, Vector2Int edge)
+    {
+        //Update edges in Cell
+        Cell cell = grid[cell_idx.x, cell_idx.y];
+        cell.markedEdges.Add(edge);
+        cell.freeEdges.Remove(edge);
+        grid[cell_idx.x, cell_idx.y] = cell;
+        //Update NeighbourCell
+        Vector2Int neighbourIndex = cell_idx + edge;
+        Cell neighbourCell = grid[neighbourIndex.x, neighbourIndex.y];
+        neighbourCell.markedEdges.Add(-edge);
+        neighbourCell.freeEdges.Remove(-edge);
+        grid[neighbourIndex.x, neighbourIndex.y] = neighbourCell;
     }
     private void RemoveAllEdges(Vector2Int cellIndex)
     {
@@ -93,80 +161,6 @@ public class GenerateGrid
         cell.freeEdges.Clear();
         grid[cellIndex.x, cellIndex.y] = cell;
     }
-
-    private void NextCell(Vector2Int pos, CellType type)
-    {
-        Cell cell = grid[pos.x, pos.y];
-        cell.type = type;
-        grid[pos.x, pos.y] = cell;
-        DebugPrintGrid();
-        if (type == CellType.Main)
-        {
-            //Test All neighbours if they are also Main, if so remove the connection to avoid shortcuts
-            cell.freeEdges.RemoveAll(edge =>
-            {
-                Cell neighbour = grid[pos.x + edge.x, pos.y + edge.y];
-                if (neighbour.type == CellType.Main)
-                {
-                    neighbour.freeEdges.Remove(-edge);
-                    grid[pos.x + edge.x, pos.y + edge.y] = neighbour;
-                    return true;
-                }
-                return false;
-            });
-            grid[pos.x, pos.y] = cell;
-
-            if (counter > 0)
-            {
-                counter--;
-                //Erweitere Hauptweg, (in extra Funktion TODO)
-                //Pick random free Edge if available
-                if (cell.freeEdges.Count > 0)
-                {
-                    int randIndex = Random.Range(0, cell.freeEdges.Count);
-                    Vector2Int pickedEdge = cell.freeEdges[randIndex];
-                    //Update edges in StartCell (set marked and remove all other)
-                    cell.markedEdges.Add(pickedEdge);
-                    cell.freeEdges.Remove(pickedEdge);
-                    grid[pos.x, pos.y] = cell;
-                    //Update edges in NeighbourCell
-                    Vector2Int neighbourIndex = pos + pickedEdge;
-                    Cell neighbourCell = grid[neighbourIndex.x, neighbourIndex.y];
-                    neighbourCell.markedEdges.Add(-pickedEdge);
-                    neighbourCell.freeEdges.Remove(-pickedEdge);
-                    grid[neighbourIndex.x, neighbourIndex.y] = neighbourCell;
-                    NextCell(neighbourIndex, CellType.Main);
-                }
-            }
-            else
-            {
-                RemoveAllEdges(pos);
-            }
-        }
-        // Wähle eine zufällige Teilmenge der verbliebenden freien Pfade als Nebenpfade
-        for (int i = 0; i < cell.freeEdges.Count; i++)
-        {
-            int rand = Random.Range(0, 2);
-            if (rand == 0)
-            {
-                Vector2Int pickedEdge = cell.freeEdges[i];
-                //Update edges in StartCell (set marked and remove all other)
-                cell.markedEdges.Add(pickedEdge);
-                cell.freeEdges.Remove(pickedEdge);
-                grid[pos.x, pos.y] = cell;
-                //Update edges in NeighbourCell
-                Vector2Int neighbourIndex = pos + pickedEdge;
-                Cell neighbourCell = grid[neighbourIndex.x, neighbourIndex.y];
-                neighbourCell.markedEdges.Add(-pickedEdge);
-                neighbourCell.freeEdges.Remove(-pickedEdge);
-                grid[neighbourIndex.x, neighbourIndex.y] = neighbourCell;
-                CellType newType = neighbourCell.type == CellType.Main ? CellType.Main : CellType.Side;
-                NextCell(neighbourIndex, newType);
-            }
-        }
-        RemoveAllEdges(pos);
-    }
-
     private void DebugPrintGrid()
     {
         string p = "";

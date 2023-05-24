@@ -10,6 +10,11 @@ using UnityEngine;
  * Diese Klasse kennt sowohl die Komponenten des Spielers, als auch die Objekte mit denen der Spieler interagiert/kollidiert
  */
 /*
+ *
+ * BUG: Manchmal ändert sich die Orientierung des spielers ohne dash, nach fallen auf eine schräge kante 
+ * ->TODO: Entkopple Gravitation von Spieler Orientierung: Gravitation nur bei dash rotieren(evtl auch nur wenn orientierung der Oberfläche ähnlich des Gravitationsvektor ist),
+ * Spieler rotation immer bei Kollision mit Oberfläche um bspw. schräge Klippen zu laufen)
+ * 
  * TODO: Steuerung des Dashes anpassen, dass sowohl für controller als auch tastatur angenehm ist !! wahrscheinlich Refactoring notwendig um die Tastenbelegung austauschbar zu machen
  * TODO: Ausdauer Mechanik hinzufügen, sodass Spieler bei verbrauchter Ausdauer zu Boden fällt.
  * TODO: Refaktorisieren wo es machbar ist. Was sollte nach Außen sichtbar sein? Was muss in der UI geändert werden? Wie wird UI benachrichtigt
@@ -153,27 +158,19 @@ public class PlayerController : MonoBehaviour
             if (isGrounded)
             {
                 OnLandEvent();
-                isFalling = false;
             }
         }
-        //Dashing
-        if (isDashing)
+        //Dashing boost
+        dashVelocity = Vector2.zero;
+        if (isDashing && dashTimer > 0)
         {
-            if (dashTimer > 0)
-            {
-                dashVelocity = dashSpeed * dashDir;
-                dashTimer -= Time.deltaTime;
-            }
-            else
-            {
-                dashVelocity = Vector2.zero;
-                isDashing = false;
-            }
+            dashVelocity = dashSpeed * dashDir;
+            dashTimer -= Time.deltaTime;
         }
-
         //Set player Velocity
         fallVelocity = isGrounded? Vector2.zero : fallVelocity + gravityVector * Time.deltaTime;
         rb.velocity = moveVelocity + fallVelocity + dashVelocity;
+        //Debug.Log("fall:" + fallVelocity + "\n dash:" + dashVelocity + "\n move:" + moveVelocity);
     }
     public void OnCollisionEnter2D(Collision2D collision)
     {
@@ -181,9 +178,21 @@ public class PlayerController : MonoBehaviour
         if (collision.otherCollider.gameObject.name == groundCheck.name && collision.gameObject.layer == LayerMask.NameToLayer("Ground"))
         {
             isGrounded = true;
-            playerTransform.rotation = Quaternion.LookRotation(playerTransform.forward, collision.GetContact(0).normal);
+            if (isDashing) //TODO:rotate gravitation only on dashing, but player always
+            {
+                playerTransform.rotation = Quaternion.LookRotation(playerTransform.forward, collision.GetContact(0).normal);
+            }
         }
     }
+    public void OnCollisionExit2D(Collision2D collision)
+    {
+        //Checks if the feet leave the ground, if so let the player fall.
+        if (collision.otherCollider.gameObject.name == groundCheck.name && collision.gameObject.layer == LayerMask.NameToLayer("Ground"))
+        {
+            isGrounded = false;
+        }
+    }
+
     //Movement Events
     public void Move(Vector2 dir)
     {
@@ -214,6 +223,7 @@ public class PlayerController : MonoBehaviour
     }
     private void Jump()
     {
+        Debug.Log("JUMP");
         //Implement Jump Event
         isRising = true;
         isGrounded = false;
@@ -231,6 +241,8 @@ public class PlayerController : MonoBehaviour
     private void OnLandEvent()
     {
         Debug.Log("LAND!!");
+        isFalling = false;
+        isDashing = false;
         //TODO: Snap to Grounded Surface when landing, so that controlling the player is possible again
         Collider2D ground = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, LayerMask.GetMask("Ground"));
         // Allgemeiner, da Object evtl von mehreren Seiten begehbar, Oder Leveldesign sehr aufwendig da manuell
