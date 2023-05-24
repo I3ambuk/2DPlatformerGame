@@ -5,9 +5,14 @@ using UnityEngine;
 public class GenerateGrid
 {
     //Setzt die maximale Pfadlänge für den Hauptpfad
-    public int lengthOfMain = 10;
     private int counter;
-    private Cell[,] grid = new Cell[4, 4];
+    private Cell[,] grid;
+
+    public GenerateGrid(int grid_width, int grid_height, int maxLengthOfMainPath)
+    {
+        this.counter = maxLengthOfMainPath;
+        this.grid = new Cell[grid_width, grid_height];
+    }
 
     public enum CellType { Main, Side, EMPTY, Start, End}
     public struct Cell
@@ -25,7 +30,6 @@ public class GenerateGrid
 
     public Cell[,] Generate()
     {
-        counter = lengthOfMain;
         // Initialisiere Grid
         for (int x = 0; x < grid.GetLength(0); x++)
         {

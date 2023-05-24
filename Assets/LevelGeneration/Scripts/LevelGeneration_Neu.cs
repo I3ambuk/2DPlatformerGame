@@ -14,7 +14,10 @@ public class LevelGeneration_Neu : MonoBehaviour
     public GameObject TestEnd;
     public GameObject Player;
     //
-    public float distance = 10;
+    public float roomSize = 20;
+    public int LevelShape_x = 5;
+    public int LevelShape_y = 5;
+    public int maxlengthOfMainPath = 5;
     public Transform upperLeftCorner;
     public GameObject Empty;
     public GameObject RoomL;
@@ -33,12 +36,14 @@ public class LevelGeneration_Neu : MonoBehaviour
     public GameObject RoomRTB;
     public GameObject RoomLRBT;
 
-    private GenerateGrid Generator = new GenerateGrid();
+    private GenerateGrid Generator;
     private GenerateGrid.Cell[,] grid;
     private GameObject[,] roomGrid = new GameObject[4,4];
     private Dictionary<(bool l, bool r, bool t, bool b), GameObject> roomMap;
     void Start()
     {
+        Generator = new GenerateGrid(LevelShape_x, LevelShape_y, maxlengthOfMainPath);
+
         Transform ROOMS = this.transform.Find("Rooms").transform;
         Transform RoomTypeTags = this.transform.Find("RoomTypeTags");
         //Setze welcher Eingänge die jeweiligen Räume haben
@@ -69,7 +74,7 @@ public class LevelGeneration_Neu : MonoBehaviour
             for (int x = 0; x < grid.GetLength(0); x++)
             {
                 GameObject room = PickRoom(grid[x, y]);
-                Vector2 pos = (Vector2) upperLeftCorner.position + distance * new Vector2(x,-y);
+                Vector2 pos = (Vector2) upperLeftCorner.position + roomSize * new Vector2(x,-y);
                 Instantiate(room, pos, Quaternion.identity).transform.parent = ROOMS;
                 
                 //Instanziiere den Player Spawn im Start Raum und für Testzwecke die die Test Objekte
