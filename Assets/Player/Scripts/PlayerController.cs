@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 /*
  * Kümmert sich um die Steuerung des Spielers
@@ -16,6 +17,8 @@ using UnityEngine;
  * Spieler rotation immer bei Kollision mit Oberfläche um bspw. schräge Klippen zu laufen)
  * 
  * TODO: Steuerung des Dashes anpassen, dass sowohl für controller als auch tastatur angenehm ist !! wahrscheinlich Refactoring notwendig um die Tastenbelegung austauschbar zu machen
+ * TODO: Geschwindigkeit bei kollision mit decke wand beachten/ändern. BUG: springen gegen decke wirkt wie schweben, da kollision mit decke nicht beachtet wird
+ * TDOD: Cached jumping, sodass man auch springt, kurz nachdem man den boden verlassen hat, bzw. springt sobald man aufkommt obwohl man noch in der luft war zu zeitpunkt des drückens.
  * TODO: Ausdauer Mechanik hinzufügen, sodass Spieler bei verbrauchter Ausdauer zu Boden fällt.
  * TODO: Refaktorisieren wo es machbar ist. Was sollte nach Außen sichtbar sein? Was muss in der UI geändert werden? Wie wird UI benachrichtigt
  * ?
@@ -32,18 +35,18 @@ public class PlayerController : MonoBehaviour
     private Rigidbody2D rb;
     private Transform playerTransform;
     private Vector2 up;
+    private PlayerControls controls;
 
     //Input
     private Vector2 movementDir = Vector2.zero;
     private Vector2 dashDir = Vector2.zero;
-    private bool tryToDash;
-    private bool tryToJump;
 
     //Status
     private bool isGrounded;
     private bool isRising;
     private bool isFalling;
     private bool isDashing;
+    private bool isAiming;
 
     //Movement
     private Vector2 moveVelocity = Vector2.zero;
@@ -57,6 +60,52 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float speed = 10f;
     private float dashTimer = 0f;
     private float dashDuration = 0.2f;
+    private float jumpTimer = 0f;
+    private float timerPlayerCanStillJump = 0f;
+
+    private enum Control { KeyboardAndMouse, Gamepad};
+    private Control currentControl;
+
+    private void Awake()
+    {
+        controls = new PlayerControls();
+
+        controls.Gameplay.Jump.performed += ctx =>
+        {
+            jumpTimer = 0.2f;
+            Jump();
+        };
+        controls.Gameplay.Dash.performed += ctx => {
+            //Holds Movement, while aiming for Dash
+            Move(Vector2.zero);
+            isAiming = true;
+            //Sets currentControl, depending on device name
+            if (controls.Gameplay.Dash.activeControl.device.displayName == "Mouse")
+            {
+                currentControl = Control.KeyboardAndMouse;
+            } else
+            {
+                currentControl = Control.Gamepad;
+            }
+        };
+        controls.Gameplay.Dash.canceled += ctx =>
+        {
+            isAiming = false;
+            GravityDash();
+        };
+        controls.Gameplay.Horizontal.performed += ctx => movementDir.x = ctx.ReadValue<float>();
+        controls.Gameplay.Horizontal.canceled += ctx => movementDir.x = 0f;
+        controls.Gameplay.Vertical.performed += ctx => movementDir.y = ctx.ReadValue<float>();
+        controls.Gameplay.Vertical.canceled += ctx => movementDir.y = 0f;
+    }
+    private void OnEnable()
+    {
+        controls.Gameplay.Enable();
+    }
+    private void OnDisable()
+    {
+        controls.Gameplay.Disable();
+    }
     private void Start()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -68,26 +117,8 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        //Change All Variables depending on Inputs
-        movementDir.x = Input.GetAxisRaw("Horizontal");
-        movementDir.y = Input.GetAxisRaw("Vertical");
+        //Normalize movement vector
         movementDir.Normalize();
-
-        if (Input.GetButton("Jump"))
-        {
-            tryToJump = true;
-        }
-        
-        if (Input.GetButtonDown("Fire1"))
-        {
-            tryToDash = true;
-            Vector3 mousePosRaw = Input.mousePosition;
-            Vector2 mousePos = Camera.main.ScreenToWorldPoint(mousePosRaw);
-            Vector2 playerpos = playerTransform.position;
-            dashDir = (mousePos - playerpos);
-            dashDir.Normalize();
-            Debug.Log("dir: " + dashDir);
-        }
 
         //Animation
         animator.SetBool("isRising", isRising);
@@ -119,25 +150,12 @@ public class PlayerController : MonoBehaviour
         {
             this.Move(movementDir);
         }
+        
+        jumpTimer = jumpTimer >= 0? jumpTimer - Time.deltaTime : 0f;
+        timerPlayerCanStillJump = timerPlayerCanStillJump >= 0 ? timerPlayerCanStillJump - Time.deltaTime : 0f;
 
-        if (tryToJump)
-        {
-            if (CanJump())
-            {
-                this.Jump();
-            }
-            tryToJump = false;
-        }
-
-        if (tryToDash)
-        { 
-            if (CanDash())
-            {
-                this.GravityDash(dashDir);
-            }
-            tryToDash = false;
-        }
         Vector2 gravityVector = gravityFallFactor * defaultGravityScale * (-up);
+
         //Rising
         if (isRising)
         { 
@@ -178,10 +196,23 @@ public class PlayerController : MonoBehaviour
         if (collision.otherCollider.gameObject.name == groundCheck.name && collision.gameObject.layer == LayerMask.NameToLayer("Ground"))
         {
             isGrounded = true;
+            fallVelocity = Vector2.zero;
+            //Checks if the player is pressing Jump or pressed Jump shortly before landing
+            if (controls.Gameplay.Jump.IsPressed() || jumpTimer > 0)
+            {
+                Jump();
+            }
+
             if (isDashing) //TODO:rotate gravitation only on dashing, but player always
             {
                 playerTransform.rotation = Quaternion.LookRotation(playerTransform.forward, collision.GetContact(0).normal);
             }
+        }
+        //if player hits a ceiling, start falling
+        if (collision.otherCollider.gameObject.name == ceilingCheck.name && collision.gameObject.layer == LayerMask.NameToLayer("Ground"))
+        {
+            Debug.Log("Hit Ceiling");
+            fallVelocity = Vector2.zero;
         }
     }
     public void OnCollisionExit2D(Collision2D collision)
@@ -190,6 +221,7 @@ public class PlayerController : MonoBehaviour
         if (collision.otherCollider.gameObject.name == groundCheck.name && collision.gameObject.layer == LayerMask.NameToLayer("Ground"))
         {
             isGrounded = false;
+            timerPlayerCanStillJump = 0.2f; //TODO: MagicNumber!! (jumpTimer auch)
         }
     }
 
@@ -223,20 +255,42 @@ public class PlayerController : MonoBehaviour
     }
     private void Jump()
     {
-        Debug.Log("JUMP");
-        //Implement Jump Event
-        isRising = true;
-        isGrounded = false;
-        fallVelocity = up * jumpVelocityScale;
+        if (CanJump())
+        {
+            jumpTimer = 0f;
+            Debug.Log("JUMP");
+            //Implement Jump Event
+            isRising = true;
+            isGrounded = false;
+            fallVelocity = up * jumpVelocityScale;
+        }
     }
-    private void GravityDash(Vector2 dashDir)
+    private void GravityDash()
     {
-        //TODO: Implement GravityDash Event
-        isDashing = true;
-        isGrounded = false;
-        playerTransform.rotation = Quaternion.LookRotation(playerTransform.forward, -dashDir);
-        fallVelocity = Vector2.zero;
-        dashTimer = dashDuration;
+
+        //Calc Dash Direction
+        if (currentControl == Control.KeyboardAndMouse)
+        {
+            Vector3 mousePosRaw = Input.mousePosition;
+            Vector2 mousePos = Camera.main.ScreenToWorldPoint(mousePosRaw);
+            Vector2 playerpos = playerTransform.position;
+            bool dashDirSimilarToGravity = Mathf.Abs(Vector2.SignedAngle((mousePos - playerpos), -up)) < 10;
+            dashDir = dashDirSimilarToGravity ? Vector2.zero : (mousePos - playerpos).normalized;
+        }
+        else if (currentControl == Control.Gamepad)
+        {
+            bool movementDirSimilarToGravity = Mathf.Abs(Vector2.SignedAngle(movementDir, -up)) < 10;
+            dashDir = movementDirSimilarToGravity ? Vector2.zero : movementDir.normalized;
+        }
+        if (CanDash())
+        {
+            //DashEvent
+            isDashing = true;
+            isGrounded = false;
+            playerTransform.rotation = Quaternion.LookRotation(playerTransform.forward, -this.dashDir);
+            fallVelocity = Vector2.zero;
+            dashTimer = dashDuration;
+        }
     }
     private void OnLandEvent()
     {
@@ -251,17 +305,17 @@ public class PlayerController : MonoBehaviour
     //Check Movement
     private bool CanMove()
     {
-        return isGrounded || isRising || isFalling;
+        return !isAiming && (isGrounded || isRising || isFalling);
     }
     private bool CanJump()
     {
-       
-        return isGrounded;
+        return isGrounded || timerPlayerCanStillJump > 0;
     }
     private bool CanDash()
     {
         Debug.Log(isFalling);
-        return isGrounded || isRising || isFalling;
+        bool dashDirValid = this.dashDir != Vector2.zero;
+        return  dashDirValid && (isGrounded || isRising || isFalling);
     }
 
     public string getDirection()
