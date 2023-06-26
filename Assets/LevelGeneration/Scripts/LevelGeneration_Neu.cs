@@ -87,7 +87,7 @@ public class LevelGeneration_Neu : MonoBehaviour
                 }
                 else if (grid[x, y].type == GenerateGrid.CellType.Start)
                 {
-                    Instantiate(Player, pos, Quaternion.identity).transform.parent = RoomTypeTags;
+                    Instantiate(Player, pos, Quaternion.identity).transform.parent = this.transform.parent;
                 }
                 else if (grid[x, y].type == GenerateGrid.CellType.End)
                 {
