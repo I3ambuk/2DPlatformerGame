@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -15,6 +16,7 @@ using UnityEngine.InputSystem;
  * BUG: Manchmal ändert sich die Orientierung des spielers ohne dash, nach fallen auf eine schräge kante 
  * --> TODO: implementiere rutschen auf schrägen oberflächen per hand, da code in die unity physik ainegreift.(hinzufügen von rutsch animation?)
  * 
+ * TODO: MERGE CONFLICT fehlerhaft! Überprüfen! Sliding funktioniert nicht richtig, Rest der steuerung an sich schon glaub
  * TODO: Steuerung des Dashes anpassen, dass sowohl für controller als auch tastatur angenehm ist !! wahrscheinlich Refactoring notwendig um die Tastenbelegung austauschbar zu machen
  * TODO: Geschwindigkeit bei kollision mit decke wand beachten/ändern. BUG: springen gegen decke wirkt wie schweben, da kollision mit decke nicht beachtet wird
  * TDOD: Cached jumping, sodass man auch springt, kurz nachdem man den boden verlassen hat, bzw. springt sobald man aufkommt obwohl man noch in der luft war zu zeitpunkt des drückens.
@@ -31,7 +33,6 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float groundCheckRadius = 0.02f;
     [SerializeField] private Animator animator;
 
-
     private Rigidbody2D rb;
     private Transform playerTransform;
     private Vector2 up;
@@ -45,8 +46,8 @@ public class PlayerController : MonoBehaviour
     private bool isGrounded;
     private bool isRising;
     private bool isFalling;
-    private bool isDashing;
     private bool isSliding;
+    private bool isDashing;
     private bool isAiming;
 
     //Movement
@@ -138,7 +139,6 @@ public class PlayerController : MonoBehaviour
         }
         
         jumpTimer = jumpTimer >= 0? jumpTimer - Time.deltaTime : 0f;
-        timerPlayerCanStillJump = timerPlayerCanStillJump >= 0 ? timerPlayerCanStillJump - Time.deltaTime : 0f;
 
         Vector2 gravityVector = gravityFallFactor * defaultGravityScale * (-up);
 
@@ -171,11 +171,66 @@ public class PlayerController : MonoBehaviour
             dashVelocity = dashSpeed * dashDir;
             dashTimer -= Time.deltaTime;
         }
+
+        Collider2D feet = groundCheck.gameObject.GetComponent<Collider2D>();
+        List<Collider2D> collider = new List<Collider2D>();
+        ContactFilter2D filter = new ContactFilter2D();
+        feet.OverlapCollider(filter, collider);
+        List<Collider2D> groundCollider = new List<Collider2D>();
+        collider.ForEach(c =>
+        {
+            if (c.gameObject.layer == LayerMask.NameToLayer("Ground"))
+            {
+                groundCollider.Add(c);
+                
+            }
+        });
+        if (groundCollider.Count > 0)
+        {
+            isGrounded = true;
+            RaycastHit2D[] hitResults = new RaycastHit2D[1]; // Array to store the RaycastHit2D
+            int hitCount = feet.Raycast(-playerTransform.up, hitResults, 1f, LayerMask.GetMask("Ground")); //Raycast from feet pointing down
+
+            if (hitCount > 0)
+            {
+                Vector2 groundNormal = hitResults[0].normal;
+                Debug.Log("Normal Vector: " + groundNormal + ", Object: " + hitResults[0].transform.name);
+                //Checks if the dash direction is similar to the ground normal, if so snap gravity to ground
+                float slopeAngle = Vector2.Angle(groundNormal, up);
+                float slopeAngleAbs = Mathf.Abs(Vector2.Angle(groundNormal, up));
+                if (isDashing && slopeAngleAbs < 20)
+                {
+                    up = groundNormal;
+                    playerTransform.rotation = Quaternion.LookRotation(playerTransform.forward, groundNormal);
+                }
+
+                //Check if the surface is steep, so the player will slide down the surface
+                if (slopeAngleAbs >= 45)
+                {
+                    isSliding = true;
+                }
+                else
+                {
+                    isSliding = false;
+                    //rotate player on not too steep surfaces
+                    playerTransform.rotation = Quaternion.LookRotation(playerTransform.forward, groundNormal);
+                }
+            }
+        } else
+        {
+            if (isGrounded)
+            {
+                timerPlayerCanStillJump = 0.2f; //TODO: MagicNumber!! (jumpTimer auch)
+            } 
+            isGrounded = false;
+        }
+        timerPlayerCanStillJump = timerPlayerCanStillJump >= 0 ? timerPlayerCanStillJump - Time.deltaTime : 0f;
+
         //Set player Velocity
-        fallVelocity = isGrounded? Vector2.zero : fallVelocity + gravityVector * Time.deltaTime;
-        print(moveVelocity);
+        fallVelocity = isFalling || isRising || isSliding ? fallVelocity + gravityVector * Time.deltaTime : Vector2.zero;
         rb.velocity = moveVelocity + fallVelocity + dashVelocity;
         //Debug.Log("fall:" + fallVelocity + "\n dash:" + dashVelocity + "\n move:" + moveVelocity);
+
     }
 
 
@@ -206,25 +261,20 @@ public class PlayerController : MonoBehaviour
         //Checks if the feet hits the ground, if so snap player to the ground.
         if (collision.otherCollider.gameObject.name == groundCheck.name && collision.gameObject.layer == LayerMask.NameToLayer("Ground"))
         {
-            isGrounded = true;
+            fallVelocity = Vector2.zero;
+
+            /*//Checks if the dash direction is similar to the ground normal, if so snap gravity to ground
             Vector2 groundNormal = collision.GetContact(0).normal;
             float angle = Mathf.Abs(Vector2.Angle(groundNormal, up));
-            print(angle);
             if (isDashing && angle < 20)
             {
                 up = groundNormal;
-            }
-            if (angle < 45)
-            fallVelocity = Vector2.zero;
-            //Checks if the player is pressing Jump or pressed Jump shortly before landing
-            if (controls.Gameplay.Jump.IsPressed() || jumpTimer > 0)
-            {
-                Jump();
+                playerTransform.rotation = Quaternion.LookRotation(playerTransform.forward, groundNormal);
             }
 
-            if (isDashing) //TODO:rotate gravitation only on dashing, but player always
+            if (angle < 45) //TODO:rotate gravitation only on dashing, but player always
             {
-                playerTransform.rotation = Quaternion.LookRotation(playerTransform.forward, collision.GetContact(0).normal);
+                playerTransform.rotation = Quaternion.LookRotation(playerTransform.forward, groundNormal);
             }
 
             //Check if the surface is steep, so the player will slide down the surface
@@ -232,9 +282,20 @@ public class PlayerController : MonoBehaviour
             int vz = slopeAngle < 0 ? -1 : 1;
             if (Mathf.Abs(slopeAngle) >= 45)
             {
-                isSliding = true;
                 Vector2 groundLeft = Vector2.Perpendicular(groundNormal);
-                moveVelocity = slideSpeed * vz * groundLeft;
+                fallVelocity = slideSpeed * vz * groundLeft;
+                moveVelocity = Vector2.zero;
+                isSliding = true;
+                Debug.Log(fallVelocity);
+            } else
+            {
+                isSliding = false;
+            }*/
+
+            //Checks if the player is pressing Jump or pressed Jump shortly before landing
+            if (controls.Gameplay.Jump.IsPressed() || jumpTimer > 0)
+            {
+                Jump();
             }
         }
         //if player hits a ceiling, start falling
@@ -249,11 +310,11 @@ public class PlayerController : MonoBehaviour
         //Checks if the feet leave the ground, if so let the player fall.
         if (collision.otherCollider.gameObject.name == groundCheck.name && collision.gameObject.layer == LayerMask.NameToLayer("Ground"))
         {
-            isGrounded = false;
+            playerTransform.rotation = Quaternion.LookRotation(playerTransform.forward, up);
             isSliding = false;
-            timerPlayerCanStillJump = 0.2f; //TODO: MagicNumber!! (jumpTimer auch)
         }
     }
+
 
     //Movement Events
     public void Move(Vector2 dir)
@@ -264,23 +325,18 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
-        float angleToUp = Vector2.SignedAngle(dir, this.up);
+        float angleToUp = Vector2.SignedAngle(dir, playerTransform.up);
         switch (angleToUp)
         {
-            case float n when (n >= 45 && n < 135):
+            case float n when (n >= 20 && n < 160):
                 //MoveRight
                 moveVelocity = playerTransform.right * this.speed;
                 break;
-            case float n when (n >= 135 && n < -135):
-                //MoveDown
-                break;
-            case float n when (n >= -135 && n < -45):
+            case float n when (n >= -160 && n < -20):
                 //MoveLeft
                 moveVelocity = -playerTransform.right * this.speed;
                 break;
-            default:
-                //MoveUp
-                break;
+            default: break;
         }
     }
     private void Jump()
@@ -291,7 +347,6 @@ public class PlayerController : MonoBehaviour
             Debug.Log("JUMP");
             //Implement Jump Event
             isRising = true;
-            isGrounded = false;
             fallVelocity = up * jumpVelocityScale;
         }
     }
@@ -316,7 +371,6 @@ public class PlayerController : MonoBehaviour
         {
             //DashEvent
             isDashing = true;
-            isGrounded = false;
             up = -this.dashDir;
             playerTransform.rotation = Quaternion.LookRotation(playerTransform.forward, -this.dashDir);
             fallVelocity = Vector2.zero;
@@ -336,7 +390,7 @@ public class PlayerController : MonoBehaviour
     //Check Movement
     private bool CanMove()
     {
-        return !isAiming && ((isGrounded && !isSliding) || isRising || isFalling);
+        return !isAiming && !isSliding && (isGrounded || isRising || isFalling);
     }
     private bool CanJump()
     {
@@ -344,7 +398,6 @@ public class PlayerController : MonoBehaviour
     }
     private bool CanDash()
     {
-        Debug.Log(isFalling);
         bool dashDirValid = this.dashDir != Vector2.zero;
         return  dashDirValid && (isGrounded || isRising || isFalling);
     }
