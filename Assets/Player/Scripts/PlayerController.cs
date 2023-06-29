@@ -75,7 +75,6 @@ public class PlayerController : MonoBehaviour
 
         controls.Gameplay.Jump.performed += ctx =>
         {
-            jumpTimer = 0.2f;
             Jump();
         };
         controls.Gameplay.Dash.performed += ctx => {
@@ -155,6 +154,10 @@ public class PlayerController : MonoBehaviour
                 isRising = false;
                 isFalling = true;
             }
+            if (isSliding)
+            {
+                fallVelocity = Vector2.zero;
+            }
         }
         //Falling
         if (isFalling)
@@ -173,46 +176,42 @@ public class PlayerController : MonoBehaviour
         }
 
         Collider2D feet = groundCheck.gameObject.GetComponent<Collider2D>();
-        List<Collider2D> collider = new List<Collider2D>();
-        ContactFilter2D filter = new ContactFilter2D();
-        feet.OverlapCollider(filter, collider);
         List<Collider2D> groundCollider = new List<Collider2D>();
-        collider.ForEach(c =>
-        {
-            if (c.gameObject.layer == LayerMask.NameToLayer("Ground"))
-            {
-                groundCollider.Add(c);
-                
-            }
-        });
+        ContactFilter2D filter = new ContactFilter2D();
+        filter.SetLayerMask(LayerMask.GetMask("Ground"));
+        feet.OverlapCollider(filter, groundCollider);
         if (groundCollider.Count > 0)
         {
             isGrounded = true;
-            RaycastHit2D[] hitResults = new RaycastHit2D[1]; // Array to store the RaycastHit2D
-            int hitCount = feet.Raycast(-playerTransform.up, hitResults, 1f, LayerMask.GetMask("Ground")); //Raycast from feet pointing down
 
-            if (hitCount > 0)
-            {
-                Vector2 groundNormal = hitResults[0].normal;
-                Debug.Log("Normal Vector: " + groundNormal + ", Object: " + hitResults[0].transform.name);
-                //Checks if the dash direction is similar to the ground normal, if so snap gravity to ground
-                float slopeAngle = Vector2.Angle(groundNormal, up);
-                float slopeAngleAbs = Mathf.Abs(Vector2.Angle(groundNormal, up));
-                if (isDashing && slopeAngleAbs < 20)
+            foreach (Collider2D c in groundCollider) {
+
+                Vector2 raycastDir = (c.ClosestPoint(feet.transform.position) - new Vector2(feet.transform.position.x, feet.transform.position.y)).normalized;
+                RaycastHit2D[] hitResults = new RaycastHit2D[1]; // Array to store the RaycastHit2D
+                int hitCount = feet.Raycast(raycastDir, hitResults, 1f, LayerMask.GetMask("Ground")); //Raycast from feet pointing down
+                if (hitCount > 0)
                 {
-                    up = groundNormal;
-                    playerTransform.rotation = Quaternion.LookRotation(playerTransform.forward, groundNormal);
-                }
-                //Check if the surface is steep, so the player will slide down the surface
-                if (slopeAngleAbs >= 45)
-                {
-                    isSliding = true;
-                }
-                else
-                {
-                    isSliding = false;
-                    //rotate player on not too steep surfaces
-                    playerTransform.rotation = Quaternion.LookRotation(playerTransform.forward, groundNormal);
+                    Vector2 groundNormal = hitResults[0].normal;
+                    //Checks if the dash direction is similar to the ground normal, if so snap gravity to ground
+                    float slopeAngle = Vector2.Angle(groundNormal, up);
+                    float slopeAngleAbs = Mathf.Abs(Vector2.Angle(groundNormal, up));
+                    if (isDashing && slopeAngleAbs < 20)
+                    {
+                        up = groundNormal;
+                        playerTransform.rotation = Quaternion.LookRotation(playerTransform.forward, groundNormal);
+                    }
+                    //Check if the surface is steep, so the player will slide down the surface
+                    if (slopeAngleAbs >= 45)
+                    {
+                        isSliding = true;
+                    }
+                    else
+                    {
+                        isSliding = false;
+                        //rotate player on not too steep surfaces
+                        playerTransform.rotation = Quaternion.LookRotation(playerTransform.forward, groundNormal);
+                        break;
+                    }
                 }
             }
         } else
@@ -220,7 +219,7 @@ public class PlayerController : MonoBehaviour
             if (isGrounded)
             {
                 timerPlayerCanStillJump = 0.2f; //TODO: MagicNumber!! (jumpTimer auch)
-            } 
+            }
             isGrounded = false;
         }
         timerPlayerCanStillJump = timerPlayerCanStillJump >= 0 ? timerPlayerCanStillJump - Time.deltaTime : 0f;
@@ -239,6 +238,7 @@ public class PlayerController : MonoBehaviour
         animator.SetBool(nameof(isFalling), isFalling);
         animator.SetBool(nameof(isDashing), isDashing);
         animator.SetBool(nameof(isGrounded), isGrounded);
+        animator.SetBool(nameof(isSliding), isSliding);
         Vector2 right = playerTransform.right;
 
         float floatDir = moveVelocity == Vector2.zero ? 0f : (right - moveVelocity.normalized == Vector2.zero) ? 1f : -1f;
@@ -260,8 +260,6 @@ public class PlayerController : MonoBehaviour
         //Checks if the feet hits the ground, if so snap player to the ground.
         if (collision.otherCollider.gameObject.name == groundCheck.name && collision.gameObject.layer == LayerMask.NameToLayer("Ground"))
         {
-            fallVelocity = Vector2.zero;
-
             /*//Checks if the dash direction is similar to the ground normal, if so snap gravity to ground
             Vector2 groundNormal = collision.GetContact(0).normal;
             float angle = Mathf.Abs(Vector2.Angle(groundNormal, up));
@@ -290,12 +288,6 @@ public class PlayerController : MonoBehaviour
             {
                 isSliding = false;
             }*/
-
-            //Checks if the player is pressing Jump or pressed Jump shortly before landing
-            if (controls.Gameplay.Jump.IsPressed() || jumpTimer > 0)
-            {
-                Jump();
-            }
         }
         //if player hits a ceiling, start falling
         if (collision.otherCollider.gameObject.name == ceilingCheck.name && collision.gameObject.layer == LayerMask.NameToLayer("Ground"))
@@ -342,11 +334,14 @@ public class PlayerController : MonoBehaviour
     {
         if (CanJump())
         {
-            jumpTimer = 0f;
             Debug.Log("JUMP");
+            timerPlayerCanStillJump = 0f;
             //Implement Jump Event
             isRising = true;
             fallVelocity = up * jumpVelocityScale;
+        } else
+        {
+            jumpTimer = 0.2f;
         }
     }
     private void GravityDash()
@@ -381,10 +376,12 @@ public class PlayerController : MonoBehaviour
         Debug.Log("LAND!!");
         isFalling = false;
         isDashing = false;
-        //TODO: Snap to Grounded Surface when landing, so that controlling the player is possible again
-        Collider2D ground = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, LayerMask.GetMask("Ground"));
-        // Allgemeiner, da Object evtl von mehreren Seiten begehbar, Oder Leveldesign sehr aufwendig da manuell
-       // playerTransform.rotation = Quaternion.LookRotation(playerTransform.forward, groundNormal);
+        //Checks if the player is pressing Jump or pressed Jump shortly before landing 
+        if (controls.Gameplay.Jump.IsPressed() || jumpTimer > 0)
+        {
+            jumpTimer = 0f;
+            Jump();
+        }
     }
     //Check Movement
     private bool CanMove()
@@ -393,6 +390,8 @@ public class PlayerController : MonoBehaviour
     }
     private bool CanJump()
     {
+        Debug.Log("isGrounded: " + isGrounded);
+        Debug.Log("timer: " + (timerPlayerCanStillJump > 0));
         return !isSliding && (isGrounded || timerPlayerCanStillJump > 0);
     }
     private bool CanDash()

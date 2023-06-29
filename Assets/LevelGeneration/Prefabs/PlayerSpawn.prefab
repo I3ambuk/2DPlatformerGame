@@ -317,7 +317,7 @@ Camera:
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 5
+  orthographic size: 8
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -443,7 +443,7 @@ MonoBehaviour:
   m_Follow: {fileID: 845344240408043208}
   m_Lens:
     FieldOfView: 60
-    OrthographicSize: 5
+    OrthographicSize: 8
     NearClipPlane: 0.3
     FarClipPlane: 1000
     Dutch: 0
@@ -550,9 +550,10 @@ MonoBehaviour:
   groundCheckRadius: 0.02
   animator: {fileID: 4369290828689206378}
   jumpheight: 3
-  gravityFallFactor: 3
+  gravityFallFactor: 5
   dashSpeed: 20
   speed: 10
+  slideSpeed: 5
 --- !u!1 &5998758045513618199
 GameObject:
   m_ObjectHideFlags: 0
