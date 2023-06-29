@@ -203,7 +203,6 @@ public class PlayerController : MonoBehaviour
                     up = groundNormal;
                     playerTransform.rotation = Quaternion.LookRotation(playerTransform.forward, groundNormal);
                 }
-
                 //Check if the surface is steep, so the player will slide down the surface
                 if (slopeAngleAbs >= 45)
                 {
@@ -394,7 +393,7 @@ public class PlayerController : MonoBehaviour
     }
     private bool CanJump()
     {
-        return isGrounded || timerPlayerCanStillJump > 0;
+        return !isSliding && (isGrounded || timerPlayerCanStillJump > 0);
     }
     private bool CanDash()
     {
