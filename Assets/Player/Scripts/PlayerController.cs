@@ -16,17 +16,19 @@ using UnityEngine.InputSystem;
  * BUG: Manchmal ändert sich die Orientierung des spielers ohne dash, nach fallen auf eine schräge kante 
  * --> TODO: implementiere rutschen auf schrägen oberflächen per hand, da code in die unity physik ainegreift.(hinzufügen von rutsch animation?)
  * 
- * TODO: MERGE CONFLICT fehlerhaft! Überprüfen! Sliding funktioniert nicht richtig, Rest der steuerung an sich schon glaub
+ * TODO: 
  * TODO: Steuerung des Dashes anpassen, dass sowohl für controller als auch tastatur angenehm ist !! wahrscheinlich Refactoring notwendig um die Tastenbelegung austauschbar zu machen
- * TODO: Geschwindigkeit bei kollision mit decke wand beachten/ändern. BUG: springen gegen decke wirkt wie schweben, da kollision mit decke nicht beachtet wird
- * TDOD: Cached jumping, sodass man auch springt, kurz nachdem man den boden verlassen hat, bzw. springt sobald man aufkommt obwohl man noch in der luft war zu zeitpunkt des drückens.
  * TODO: Ausdauer Mechanik hinzufügen, sodass Spieler bei verbrauchter Ausdauer zu Boden fällt.
+ * TODO: Steuerung hinzufügen, die Dash abbricht (dash nach unten)
  * TODO: Refaktorisieren wo es machbar ist. Was sollte nach Außen sichtbar sein? Was muss in der UI geändert werden? Wie wird UI benachrichtigt
  * ?
  */
 
 public class PlayerController : MonoBehaviour
 {
+
+    public Vector2 up;
+
     // Player Components
     [SerializeField] private Transform ceilingCheck;
     [SerializeField] private Transform groundCheck;
@@ -35,7 +37,6 @@ public class PlayerController : MonoBehaviour
 
     private Rigidbody2D rb;
     private Transform playerTransform;
-    private Vector2 up;
     private PlayerControls controls;
 
     //Input
@@ -68,6 +69,7 @@ public class PlayerController : MonoBehaviour
 
     private enum Control { KeyboardAndMouse, Gamepad};
     private Control currentControl;
+    private StaminaControl staminaControl;
 
     private void Awake()
     {
@@ -113,6 +115,7 @@ public class PlayerController : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         playerTransform = this.transform;
         up = playerTransform.up;
+        staminaControl = GetComponent<StaminaControl>();
         jumpVelocityScale = Mathf.Sqrt(2 * jumpheight * defaultGravityScale);
         isFalling = !isGrounded && !isRising;
     }
@@ -365,11 +368,15 @@ public class PlayerController : MonoBehaviour
         {
             //DashEvent
             isDashing = true;
-            up = -this.dashDir;
-            playerTransform.rotation = Quaternion.LookRotation(playerTransform.forward, -this.dashDir);
+            changePlayerGravity(dashDir);
             fallVelocity = Vector2.zero;
             dashTimer = dashDuration;
         }
+    }
+    public void changePlayerGravity(Vector2 dashDir)
+    {
+        up = -dashDir;
+        playerTransform.rotation = Quaternion.LookRotation(playerTransform.forward, -dashDir);
     }
     private void OnLandEvent()
     {
@@ -396,8 +403,9 @@ public class PlayerController : MonoBehaviour
     }
     private bool CanDash()
     {
+        bool hasStamina = staminaControl.stamina > 0;
         bool dashDirValid = this.dashDir != Vector2.zero;
-        return  dashDirValid && (isGrounded || isRising || isFalling);
+        return  hasStamina && dashDirValid && (isGrounded || isRising || isFalling);
     }
 
     public string getDirection()
