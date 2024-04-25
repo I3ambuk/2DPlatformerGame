@@ -11,11 +11,10 @@ public class UIScript : MonoBehaviour
     {
         VisualElement root = GetComponent<UIDocument>().rootVisualElement;
         staminaBar = root.Q<VisualElement>("Stamina");
-
     }
 
     private void FixedUpdate()
     {
-        staminaBar.style.width = new StyleLength(Length.Percent(stamina_control.stamina));
+        staminaBar.style.width = new StyleLength(Length.Percent(100 * stamina_control.stamina/stamina_control.maxStamina));
     }
 }

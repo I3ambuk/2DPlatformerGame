@@ -191,7 +191,7 @@ public class PlayerController : MonoBehaviour
 
                 Vector2 raycastDir = (c.ClosestPoint(feet.transform.position) - new Vector2(feet.transform.position.x, feet.transform.position.y)).normalized;
                 RaycastHit2D[] hitResults = new RaycastHit2D[1]; // Array to store the RaycastHit2D
-                int hitCount = feet.Raycast(raycastDir, hitResults, 1f, LayerMask.GetMask("Ground")); //Raycast from feet pointing down
+                int hitCount = feet.Raycast(raycastDir, hitResults, 1f, LayerMask.GetMask("Ground"));
                 if (hitCount > 0)
                 {
                     Vector2 groundNormal = hitResults[0].normal;

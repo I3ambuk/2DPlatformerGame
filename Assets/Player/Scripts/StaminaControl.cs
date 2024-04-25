@@ -6,14 +6,16 @@ public class StaminaControl : MonoBehaviour
 {
     [SerializeField] float staminaLossSpeed = 1f;
     [SerializeField] float staminaRefillSpeed = 1f;
-    [SerializeField] float pauseAfterZero = 5f;
+    [SerializeField] float pauseRefillSec = 5f;
     PlayerController playerController;
     Vector2 standardUp = Vector2.up;
-    public float stamina = 100f;
-    private float timerAfterZeroToFill = 0f;
+    public float maxStamina = 10f;
+    public float stamina;
+    private float refillTimer = 0f;
     private void Start()
     {
         playerController = GetComponent<PlayerController>();
+        stamina = maxStamina;
     }
 
     private void FixedUpdate()
@@ -27,23 +29,23 @@ public class StaminaControl : MonoBehaviour
             {
                 stamina = 0f;
                 playerController.changePlayerGravity(-standardUp);
-                timerAfterZeroToFill = pauseAfterZero;
+                refillTimer = pauseRefillSec;
             }
         }
         else
         {
-            if (stamina < 100f)
+            if (stamina < maxStamina)
             {
-                if (timerAfterZeroToFill == 0f)
+                if (refillTimer == 0f)
                 {
                     stamina += staminaRefillSpeed * Time.deltaTime;
                 }
-            } else
+            } else if (stamina > maxStamina)
             {
-                stamina = 100f;
+                stamina = maxStamina;
             }
         }
-        timerAfterZeroToFill = timerAfterZeroToFill > 0f? timerAfterZeroToFill - Time.deltaTime: 0f;
+        refillTimer = refillTimer > 0f? refillTimer - Time.deltaTime: 0f;
 
     }
 
