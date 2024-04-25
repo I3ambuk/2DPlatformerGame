@@ -317,7 +317,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f731738000c886e43b8ae8cb40ad8bfb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  stamina_control: {fileID: 3432946803969677614}
+  stamina_control: {fileID: 0}
 --- !u!1 &4438042113812602430
 GameObject:
   m_ObjectHideFlags: 0
@@ -533,8 +533,8 @@ GameObject:
   - component: {fileID: 845344240408043208}
   - component: {fileID: 597278903464316301}
   - component: {fileID: 6420262871552760101}
-  - component: {fileID: 624288572245307547}
-  - component: {fileID: 3432946803969677614}
+  - component: {fileID: 922959980144083687}
+  - component: {fileID: 8304127688070249415}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -597,7 +597,7 @@ CapsuleCollider2D:
   m_Offset: {x: 0, y: 0.01883936}
   m_Size: {x: 0.67, y: 1.5935428}
   m_Direction: 0
---- !u!114 &624288572245307547
+--- !u!114 &922959980144083687
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -606,20 +606,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 5366894560792310600}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d4d568ad781e4004081371993ace2a27, type: 3}
+  m_Script: {fileID: 11500000, guid: cc687ec02e404614298e6bed3173c94d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  up: {x: 0, y: 0}
-  ceilingCheck: {fileID: 7004944326138964144}
-  groundCheck: {fileID: 668450102186497379}
-  groundCheckRadius: 0.02
-  animator: {fileID: 4369290828689206378}
-  jumpheight: 3
-  gravityFallFactor: 5
-  dashSpeed: 20
-  speed: 10
-  slideSpeed: 5
---- !u!114 &3432946803969677614
+  _stats: {fileID: 0}
+--- !u!114 &8304127688070249415
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -628,13 +619,19 @@ MonoBehaviour:
   m_GameObject: {fileID: 5366894560792310600}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1f29771de0f540747af4ec096e630baa, type: 3}
+  m_Script: {fileID: 11500000, guid: 28511f0aa9112de4fa6ed98d439d19cd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  staminaLossSpeed: 50
-  staminaRefillSpeed: 10
-  pauseAfterZero: 5
-  stamina: 100
+  _anim: {fileID: 0}
+  _sprite: {fileID: 0}
+  _maxIdleSpeed: 2
+  _maxTilt: 5
+  _tiltSpeed: 20
+  _jumpParticles: {fileID: 0}
+  _launchParticles: {fileID: 0}
+  _moveParticles: {fileID: 0}
+  _landParticles: {fileID: 0}
+  _footsteps: []
 --- !u!1 &5998758045513618199
 GameObject:
   m_ObjectHideFlags: 0
