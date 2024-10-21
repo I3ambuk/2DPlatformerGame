@@ -3,7 +3,13 @@ using UnityEngine;
 namespace MovementController
 {
     /// <summary>
-    /// VERY primitive animator example.
+    /// Animator for Player Movement
+    /// 
+    /// Running Animation:
+    /// grounded, direction != 0
+    /// 
+    /// Jumping Animation
+    /// 
     /// </summary>
     public class PlayerAnimator : MonoBehaviour
     {
@@ -20,23 +26,23 @@ namespace MovementController
         [SerializeField] private float _maxTilt = 5;
         [SerializeField] private float _tiltSpeed = 20;
 
-        [Header("Particles")][SerializeField] private ParticleSystem _jumpParticles;
+        /*[Header("Particles")] [SerializeField] private ParticleSystem _jumpParticles;
         [SerializeField] private ParticleSystem _launchParticles;
         [SerializeField] private ParticleSystem _moveParticles;
-        [SerializeField] private ParticleSystem _landParticles;
+        [SerializeField] private ParticleSystem _landParticles;*/
 
-        [Header("Audio Clips")]
+/*        [Header("Audio Clips")]
         [SerializeField]
-        private AudioClip[] _footsteps;
+        private AudioClip[] _footsteps;*/
 
-        private AudioSource _source;
+        /*private AudioSource _source;*/
         private IPlayerController _player;
         private bool _grounded;
-        private ParticleSystem.MinMaxGradient _currentGradient;
+        /*private ParticleSystem.MinMaxGradient _currentGradient;*/
 
         private void Awake()
         {
-            _source = GetComponent<AudioSource>();
+            /*_source = GetComponent<AudioSource>();*/
             _player = GetComponentInParent<IPlayerController>();
         }
 
@@ -45,7 +51,7 @@ namespace MovementController
             _player.Jumped += OnJumped;
             _player.GroundedChanged += OnGroundedChanged;
 
-            _moveParticles.Play();
+           /* _moveParticles.Play();*/
         }
 
         private void OnDisable()
@@ -53,20 +59,21 @@ namespace MovementController
             _player.Jumped -= OnJumped;
             _player.GroundedChanged -= OnGroundedChanged;
 
-            _moveParticles.Stop();
+            /*_moveParticles.Stop();*/
         }
 
         private void Update()
         {
             if (_player == null) return;
 
-            DetectGroundColor();
+            /*DetectGroundColor();*/
 
             HandleSpriteFlip();
 
             HandleIdleSpeed();
 
-            HandleCharacterTilt();
+            HandleRunningAnimation();
+            HandleFallingAnimation();
         }
 
         private void HandleSpriteFlip()
@@ -78,13 +85,18 @@ namespace MovementController
         {
             var inputStrength = Mathf.Abs(_player.FrameInput.x);
             _anim.SetFloat(IdleSpeedKey, Mathf.Lerp(1, _maxIdleSpeed, inputStrength));
-            _moveParticles.transform.localScale = Vector3.MoveTowards(_moveParticles.transform.localScale, Vector3.one * inputStrength, 2 * Time.deltaTime);
+/*            _moveParticles.transform.localScale = Vector3.MoveTowards(_moveParticles.transform.localScale, Vector3.one * inputStrength, 2 * Time.deltaTime);
+*/        }
+
+        private void HandleRunningAnimation()
+        {
+            var inputStrength = Mathf.Abs(_player.FrameInput.x);
+            _anim.SetBool("Run", _grounded && inputStrength > 0);
         }
 
-        private void HandleCharacterTilt()
+        private void HandleFallingAnimation()
         {
-            var runningTilt = _grounded ? Quaternion.Euler(0, 0, _maxTilt * _player.FrameInput.x) : Quaternion.identity;
-            _anim.transform.up = Vector3.RotateTowards(_anim.transform.up, runningTilt * Vector2.up, _tiltSpeed * Time.deltaTime, 0f);
+            _anim.SetBool("Fall", !_grounded);
         }
 
         private void OnJumped()
@@ -93,12 +105,12 @@ namespace MovementController
             _anim.ResetTrigger(GroundedKey);
 
 
-            if (_grounded) // Avoid coyote
+           /* if (_grounded) // Avoid coyote
             {
                 SetColor(_jumpParticles);
                 SetColor(_launchParticles);
                 _jumpParticles.Play();
-            }
+            }*/
         }
 
         private void OnGroundedChanged(bool grounded, float impact)
@@ -107,23 +119,23 @@ namespace MovementController
 
             if (grounded)
             {
-                DetectGroundColor();
-                SetColor(_landParticles);
+                /*DetectGroundColor();*/
+                /*SetColor(_landParticles);*/
 
                 _anim.SetTrigger(GroundedKey);
-                _source.PlayOneShot(_footsteps[Random.Range(0, _footsteps.Length)]);
+                /*_source.PlayOneShot(_footsteps[Random.Range(0, _footsteps.Length)]);
                 _moveParticles.Play();
 
                 _landParticles.transform.localScale = Vector3.one * Mathf.InverseLerp(0, 40, impact);
-                _landParticles.Play();
+                _landParticles.Play();*/
             }
             else
             {
-                _moveParticles.Stop();
+                /*_moveParticles.Stop();*/
             }
         }
 
-        private void DetectGroundColor()
+     /*   private void DetectGroundColor()
         {
             var hit = Physics2D.Raycast(transform.position, Vector3.down, 2);
 
@@ -131,13 +143,13 @@ namespace MovementController
             var color = r.color;
             _currentGradient = new ParticleSystem.MinMaxGradient(color * 0.9f, color * 1.2f);
             SetColor(_moveParticles);
-        }
+        }*/
 
-        private void SetColor(ParticleSystem ps)
+      /*  private void SetColor(ParticleSystem ps)
         {
             var main = ps.main;
             main.startColor = _currentGradient;
-        }
+        }*/
 
         private static readonly int GroundedKey = Animator.StringToHash("Grounded");
         private static readonly int IdleSpeedKey = Animator.StringToHash("IdleSpeed");

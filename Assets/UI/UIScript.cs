@@ -3,18 +3,21 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-public class UIScript : MonoBehaviour
+namespace MovementController
 {
-    [SerializeField] StaminaControl stamina_control;
-    VisualElement staminaBar;
-    private void OnEnable()
+    public class UIScript : MonoBehaviour
     {
-        VisualElement root = GetComponent<UIDocument>().rootVisualElement;
-        staminaBar = root.Q<VisualElement>("Stamina");
-    }
+        [SerializeField] StaminaControl stamina_control;
+        VisualElement staminaBar;
+        private void OnEnable()
+        {
+            VisualElement root = GetComponent<UIDocument>().rootVisualElement;
+            staminaBar = root.Q<VisualElement>("Stamina");
+        }
 
-    private void FixedUpdate()
-    {
-        staminaBar.style.width = new StyleLength(Length.Percent(100 * stamina_control.stamina/stamina_control.maxStamina));
+        private void FixedUpdate()
+        {
+            staminaBar.style.width = new StyleLength(Length.Percent(100 * stamina_control.stamina / stamina_control.maxStamina));
+        }
     }
 }
